@@ -1,0 +1,144 @@
+﻿@{
+    ViewData["Title"] = "Chat Room";
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>聊天室</title>
+    <style>
+        body.night-mode {
+            background-color: #333;
+            color: #fff;
+            margin: 0
+        }
+
+        .chat-container {
+            max-width: 100%;
+            height: 100vh; 
+            display: flex;
+            flex-direction: column;
+            border-radius: 0; 
+            box-shadow: none; 
+        }
+
+        .chat-header {
+            background-color: #222; 
+            color: white;
+            text-align: center;
+            padding: 10px;
+        }
+
+        .chat-messages {
+            flex: 1; 
+            overflow-y: auto;
+            padding: 10px;
+            background-color: #333; 
+        }
+
+        .chat-messages ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .chat-messages li {
+            margin: 10px 0;
+            padding: 10px;
+            background-color: #444; 
+            border-radius: 5px;
+            color: #fff;
+        }
+
+        .chat-input {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            background-color: #222;
+        }
+
+        .chat-input input[type="text"] {
+            flex: 1;
+            padding: 8px;
+            border: none;
+            border-radius: 5px;
+            margin-right: 10px;
+            background-color: #333; 
+            color: #fff;
+        }
+
+        .chat-input button {
+            padding: 8px 16px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .chat-input button[disabled] {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body class="night-mode" style="">
+    <div class="chat-container">
+        <div class="chat-header">
+            聊天室
+        </div>
+        <div class="chat-messages">
+            <ul id="messages"></ul>
+        </div>
+        <div class="chat-input">
+            <input type="text" id="messageInput" placeholder="輸入訊息...">
+            <button id="sendButton">發送</button>
+        </div>
+    </div>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/6.0.1/signalr.js"></script>
+    <script>
+        // 詢問使用者名稱的確認框
+        const userName = window.prompt("請輸入您的名稱：", "");
+
+        if (userName) {
+            // 建立 SignalR 連線
+            const connection = new signalR.HubConnectionBuilder()
+                .withUrl("/chathub")
+                .build();
+
+            connection.start().catch(function (err) {
+                return console.error(err.toString());
+            });
+
+            // 接收訊息並顯示在畫面上
+            connection.on("ReceiveMessage", function (user, message) {
+                const messagesList = document.getElementById("messages");
+                const li = document.createElement("li");
+                li.textContent = `${user}: ${message}`;
+                messagesList.appendChild(li);
+            });
+
+            // 當按下發送按鈕時處理發送訊息
+            document.getElementById("sendButton").addEventListener("click", function (event) {
+                const message = document.getElementById("messageInput").value;
+
+                // 發送訊息到 SignalR Hub
+                connection.invoke("SendMessage", userName, message).catch(function (err) {
+                    return console.error(err.toString());
+                });
+
+                event.preventDefault();
+            });
+        } else {
+            alert("請輸入您的名稱才能進入聊天室。");
+            document.getElementById("sendButton").setAttribute("disabled", "disabled");
+            document.getElementById("messageInput").setAttribute("disabled", "disabled");
+        }
+    </script>
+</body>
+</html>
+
